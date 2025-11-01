@@ -1,0 +1,14 @@
+# Node.js
+node_modules/
+dist/
+npm-debug.log
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+env/
+venv/
+*.egg-info/
