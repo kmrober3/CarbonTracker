@@ -10,7 +10,11 @@ const PORT = 8080;
 
 app.get("/", (req, res) => {
     return res.send("Backend is running");
-}); 
+});  
+
+app.get("/transportation", async(req, res) => {
+    
+})
 
 app.listen(PORT, ()=> {
     console.log(`Server is running on http://localhost:${PORT}`);
