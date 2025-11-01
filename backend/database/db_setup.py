@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv() 
-os.getEnv(DB)
+db_url = os.getenv("DB") 
+engine = create_engine(db_url) 
 
-engine = create_engine()
+Base.metadata.create_all(engine)
+
+SessionLocal = sessionmaker(bind=engine)
