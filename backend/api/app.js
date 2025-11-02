@@ -11,14 +11,14 @@ const PORT = 8080;
 
 app.get("/", (req, res) => {
     return res.send("Backend is running");
-});   
+});    
 
+
+//Co2 Produced by Transportation (Car)
 app.get("/carbon-per-car", async (req, res) => {
   const { distance, distance_unit } = req.query;
 
-  const url = "https://api.climatiq.io/data/v1/estimate"; 
-
-  console.log("HI");
+  const url = "https://api.climatiq.io/data/v1/estimate";
 
   const body = {
     emission_factor: {
@@ -30,8 +30,6 @@ app.get("/carbon-per-car", async (req, res) => {
       distance_unit: distance_unit || "mi"
     }
   }; 
-
-  console.log("body");
 
   try {
     const response = await fetch(url, {
@@ -56,53 +54,72 @@ app.get("/carbon-per-car", async (req, res) => {
     console.error("Error:", error.message);
     return res.status(500).json({ error: "Failed to fetch emission data" });
   }
+}); 
+
+//Co2 Produced by Home Energy Consumption  
+app.get("/home-enery-consumption", async(req, res) => {
+    const {energy, energy_unit} = req.query; 
+    console.log(energy);
+    console.log(energy_unit);
+    const url = "https://api.climatiq.io/data/v1/estimate";
+    const body = {
+        emission_factor: {
+            activity_id: "electricity-supply_grid-source_residual_mix-supplier_cms_energy_consumers_energy",
+            data_version: "^21"
+        },
+        parameters: {
+            energy: parseFloat(energy),
+            energy_unit: energy_unit
+        }
+    }; 
+    try {
+        const response = await fetch(url, { 
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.climatiq_api_key}`, 
+                "content-type": "application/json"
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            const errText = response.text;
+            throw new Error(`API error ${response.status}: ${errText}`);
+        }
+        const data = await response.json(); 
+        console.log(data);
+        res.json(data);
+    } catch (error) {  
+        console.log("Error: ", error.message);
+        return res.status(500).json({error: "Failed to fetch emission data" });
+
+    }
+}) 
+
+//Co2 produced by purchase of goods 
+app.get("/diet", async(req, res) => {
+    const {meat, veg, fruit, water} = req.query; 
+    const mpw = meat * 7;
+    const vpw = veg * 7;
+    const fpw = fruit * 7;
+    const wpw = water * 7; 
+
+    mCo2 = mpw * 27;
+    vCo2 = vpw * 2;
+    fCo2 = fpw * 1.1;
+    wCo2 = wpw * 0.0003;
+
+    total = mCo2 + vCo2 + fCo2 +wCo2;
+    res.json(total);
+    
 });
 
 
-app.get("/vehicle-makes", async (req, res) => { 
-    try {  
-        console.log("HI")
-        const request =  await fetch("https://www.carboninterface.com/api/v1/vehicle_makes", {
-        method: "GET",
-        headers: {
-            "Authorization": `Bearer ${process.env.api_key}`,
-            "Content-Type": "application/json"
-        }
-        }); 
-        console.log(request.status)   
-
-        if (!request.ok) {
-            const text = await request.text();
-            console.error("Carbon API error:", request.status, text);
-            return res.status(request.status).json({ error: "Carbon API request failed", details: text });
-        } 
-
-        const response = await request.json();   
-
-        await fetch("http://localhost:5050/vehicle-makes", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(response)
-        }); 
-
-        if (!flaskResponse.ok) {
-            const text = await flaskResponse.text();
-            console.error("Flask API error:", flaskResponse.status, text);
-            return res.status(flaskResponse.status).json({ error: "Flask API request failed", details: text });
-        } 
-
-        return res.status(200).json({ message: "Vehicle makes fetched and sent successfully!" });
-
-    } catch (error) { 
-        return res.status(500).json({"Error": "Data not found"});
-    }
-}); 
-
-
+//Search for valid activity_id
 app.get("/retrieve-ids", async (req, res) => {
     try {
         const response = await fetch(
-        "https://api.climatiq.io/data/v1/search?query=car&data_version=^27",
+        "https://api.climatiq.io/data/v1/search?query=waste&data_version=^27",
         {
             method: "GET",
             headers: {
@@ -124,7 +141,7 @@ app.get("/retrieve-ids", async (req, res) => {
         console.error("Error fetching data:", error);
         res.status(500).json({ error: error.message });
     }
-    });
+});
 
 
 app.listen(PORT, ()=> {
