@@ -11,25 +11,42 @@ def app_running():
 
 @app.route("/vehicle-makes", methods=["POST"])
 def vehicle_makes():   
+    db = SessionLocal() 
     try:
-        reqData = request.get_json()  
-        ls = []
-        for i in range(i, len(reqData)): 
-            instance = VehicleMakes()
-            instance.make_id = reqData.data.id
-            instance.name = reqData.data.attributes.name 
-            instance.number_of_models = reqData.data.attributes.number_of_models 
-            ls.append(instance)  
-        db = SessionLocal()
-        for x in reqData:
-            db.add(x)
-        return jsonify({"status": "Database populated succesfully"}), 200 
+        reqData = request.get_json()   
+        if not isinstance(reqData, list):
+            return jsonify({"error": "Expected a list of vehicle make objects"}), 400
+        for item in reqData: 
+
+            data = item.get("data", {})   
+            attribute = item.get("attributes", {}) 
+
+            if not data or not attribute:
+                continue
+
+            make_id = data.get("id")
+            name = attribute.get("name") 
+            number_of_models = attribute.get("number_of_models")  
+
+            existing = db.query(VehicleMakes).filter_by(make_id=make_id).first()
+            if existing:
+                existing.name = name
+                existing.number_of_models = number_of_models
+            else:
+                instance = VehicleMakes (
+                    make_id = make_id,
+                    name=name,
+                    number_of_models=number_of_models
+                ) 
+                db.add(instance) 
+        db.commit()
+        return jsonify({"status": "Database populated succesfully"}), 200
     except Exception as e:
         print("Error in population database:", e) 
         db.rollback()
         return jsonify({"error": str(e)}), 500 
     finally:
         db.close()
-        
+
 if __name__ == "__main__":
     app.run(port=5050, debug=True)
